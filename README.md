@@ -1,7 +1,7 @@
 ## Updated for SteamDB 2025 Layout
 
 This fork updates the original **achgen** by [Colmines92](https://github.com/Colmines92)
-to support the new SteamDB achievement page structure (now under `/stats/`).
+to support the new SteamDB achievement page structure.
 
 ### Changes:
 - Fixed achievement parsing (`div.achievement` layout)
