@@ -1,4 +1,7 @@
-# achgen
+# Fixed Colmines92's achgen
+The OG: https://github.com/Colmines92/achgen
+Seems like steamdb just changed the html a bit so I was can not take the achivements list. So I make a bit change to brings it back to life.
+
 
 USAGE:
 
