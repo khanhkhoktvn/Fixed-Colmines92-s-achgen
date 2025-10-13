@@ -1,4 +1,4 @@
-﻿using HtmlAgilityPack;
+using HtmlAgilityPack;
 using Newtonsoft.Json;
 using RestSharp;
 using System.Net;
@@ -7,8 +7,6 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Reflection;
-using System.Web;
-using RestSharp.Extensions.MonoHttp;
 
 namespace SteamAchievementsGenerator
 {
@@ -21,7 +19,7 @@ namespace SteamAchievementsGenerator
         private static readonly string invalidChars = new string(Path.GetInvalidFileNameChars());
         private static readonly Dictionary<string, string> lang_names = new Dictionary<string, string>();
 
-    static Assembly CurrentDomain_AssemblyResolve(object sender, ResolveEventArgs args)
+        static Assembly CurrentDomain_AssemblyResolve(object sender, ResolveEventArgs args)
         {
             return EmbeddedAssembly.Get(args.Name);
         }
@@ -29,8 +27,8 @@ namespace SteamAchievementsGenerator
         static void Main(string[] args)
         {
             Console.WriteLine(@"Achievements Generator
-Version 1.1.1
-Programmed by Colmines92
+Version 1.2.0 (2025 layout support)
+Programmed by Colmines92 / Updated by khanhkhoktvn
 ");
 
             string resource1 = "SteamAchievementsGenerator.Resources.HtmlAgilityPack.dll";
@@ -47,9 +45,8 @@ Programmed by Colmines92
             lang_names.Add("korean", "koreana");
             lang_names.Add("portuguese - brazil", "brazilian");
 
-            maindir = Path.GetDirectoryName(System.Reflection.Assembly.GetEntryAssembly().Location);
-
-            if (maindir != null && maindir != "")
+            maindir = Path.GetDirectoryName(Assembly.GetEntryAssembly().Location);
+            if (!string.IsNullOrEmpty(maindir))
                 maindir = maindir.Replace("\\", "/");
 
             if (args.Length < 1)
@@ -59,7 +56,6 @@ Programmed by Colmines92
             }
 
             var filename = args[0].Replace('\\', '/');
-
             if (!File.Exists(filename))
             {
                 PrintUsage();
@@ -68,8 +64,7 @@ Programmed by Colmines92
 
             string filedir = Path.GetDirectoryName(filename);
             string filenameWithoutExt = Path.GetFileNameWithoutExtension(filename);
-
-            filesdir = string.Join("/", new string[]{ filedir, filenameWithoutExt + "_files"});
+            filesdir = string.Join("/", new string[] { filedir, filenameWithoutExt + "_files" });
             if (!Directory.Exists(filesdir)) Directory.CreateDirectory(filesdir);
 
             achgen = new AchGen(filename);
@@ -80,20 +75,7 @@ Programmed by Colmines92
             }
 
             folder = Path.Combine(maindir, achgen.Name == "" ? achgen.AppId : achgen.AppId + " - " + achgen.Name);
-
-            bool existed = Directory.Exists(folder);
-
-            if (!MakeDir(folder))
-                return;
-
-            if (!existed)
-            {
-                try
-                {
-                    Directory.Delete(folder);
-                }
-                catch { }
-            }
+            if (!MakeDir(folder)) return;
 
             var achievements = achgen.GetAchievements();
             var stats = achgen.GetStats();
@@ -109,134 +91,88 @@ Programmed by Colmines92
 
             if (dlc != null && dlc.Count != 0)
                 SaveFile("DLC.txt", dlc, "dlc");
+
+            Console.WriteLine("\nDone! Output folder:");
+            Console.WriteLine(folder);
+            Console.ReadKey();
         }
 
         static void PrintUsage()
         {
             Console.WriteLine(@"USAGE:
-    THE FOLLOWING STEPS ARE MEANT TO BE PERFORMED ON A DESKTOP BROWSER.
-
-    1. Search your game at https://steamdb.info/
-    2. Choose your game id from the list.
-    3. Click on achievements, then download both the html file and the folder ending with '_files'.
-    4. Drag the downloaded html into the app executable icon and wait for it to finish.");
-
+    1. Go to https://steamdb.info/
+    2. Search your game, click it.
+    3. Open the “Stats” tab (that’s now the Achievements page).
+    4. Save the HTML file and its “_files” folder.
+    5. Drag the HTML file onto this exe.");
             Console.ReadKey();
         }
 
         static bool MakeDir(string path, bool forced = true)
         {
-            if (Directory.Exists(path))
-                return true;
-
-            if (File.Exists(path))
-            {
-                if (!forced)
-                    return false;
-
-                try
-                {
-                    File.Delete(path);
-                }
-                catch (Exception)
-                {
-                    return false;
-                }
-            }
-
             try
             {
+                if (Directory.Exists(path)) return true;
+                if (File.Exists(path))
+                {
+                    if (!forced) return false;
+                    File.Delete(path);
+                }
                 Directory.CreateDirectory(path);
+                return true;
             }
-            catch (Exception)
-            {
-                return false;
-            }
-
-            return true;
+            catch { return false; }
         }
 
         public static bool CopyFile(string src, string dst)
         {
-            if (!MakeDir(Path.GetDirectoryName(dst)))
-                return false;
-
             try
             {
+                if (!File.Exists(src)) return false;
+                MakeDir(Path.GetDirectoryName(dst));
                 File.Copy(src, dst, true);
+                return true;
             }
             catch { return false; }
-            return true;
         }
 
         static void SaveFile(string name, object content, string mode = "stats")
         {
-            if (content == null)
-                return;
-
+            if (content == null) return;
             var filename = Path.Combine(folder, name);
-            string json;
 
             using (var file = new StreamWriter(filename, false, new System.Text.UTF8Encoding(false)))
             {
-                JsonSerializerSettings jsonSettings = new JsonSerializerSettings();
-
                 switch (mode)
                 {
                     case "achievements":
-                        if (((Achievement[])content).Length == 0)
-                            break;
-
-                        json = JsonConvert.SerializeObject(content, Formatting.Indented, jsonSettings);
-
-                        if (!MakeDir(Path.GetDirectoryName(folder)))
-                            break;
-
-                        try
-                        {
-                            file.Write(json);
-                        }
-                        catch { }
-
+                        var achievements = (Achievement[])content;
+                        if (achievements.Length == 0) return;
+                        string json = JsonConvert.SerializeObject(achievements, Formatting.Indented);
+                        file.Write(json);
                         break;
 
                     case "stats":
-                        List<Dictionary<string, string>> list = (List<Dictionary<string, string>>)content;
-                        if (list.Count == 0)
-                            break;
-
-                        if (!MakeDir(Path.GetDirectoryName(folder)))
-                            break;
-
-                        foreach (Dictionary<string, string> dict in list)
+                        var list = (List<Dictionary<string, string>>)content;
+                        foreach (var dict in list)
                         {
-                            string _name = dict["name"];
-                            string _value = dict["defaultValue"];
-                            string _type = "int";
-
-                            if (_value.Contains('.'))
-                                _type = "float";
-
-                            string format = "{0}={1}={2}";
-
-                            try
-                            {
-                                file.WriteLine(string.Format(format, _name, _type, _value));
-                            }
-                            catch { }
+                            string nameKey = dict["name"];
+                            string value = dict["defaultValue"];
+                            string type = value.Contains('.') ? "float" : "int";
+                            file.WriteLine($"{nameKey}={type}={value}");
                         }
                         break;
+
                     case "dlc":
-                        List<string> dlcvalue = (List<string>)content;
-                        if (dlcvalue.Count == 0)
-                            break;
+                        var dlcvalue = (List<string>)content;
+                        if (dlcvalue.Count == 0) return;
                         file.WriteLine(string.Join("\n", dlcvalue));
                         break;
+
                     default:
-                        string value = content.ToString();
-                        if (value.Length == 0 || value == "0")
-                            break;
-                        file.Write(value);
+                        string valueText = content.ToString();
+                        if (valueText.Length == 0 || valueText == "0") return;
+                        file.Write(valueText);
                         break;
                 }
             }
@@ -260,193 +196,107 @@ Programmed by Colmines92
 
             public AchGen(string filename)
             {
-                try
-                {
-                    var content = File.ReadAllText(filename);
-                    soup = new HtmlDocument();
-                    soup.LoadHtml(content);
-                }
-                catch { }
-
+                var content = File.ReadAllText(filename);
+                soup = new HtmlDocument();
+                soup.LoadHtml(content);
                 AppId = soup.DocumentNode.SelectSingleNode("//div[@class='scope-app']")?.GetAttributeValue("data-appid", "0");
-                Name = ValidateFileName(soup?.DocumentNode.SelectSingleNode("//h1[contains(@itemprop,'name')]")?.InnerText);
+                Name = ValidateFileName(soup?.DocumentNode.SelectSingleNode("//h1[contains(@itemprop,'name')]")?.InnerText ?? "");
             }
-
 
             public Achievement[] GetAchievements()
             {
-                string fullName = achgen.AppId.ToString();
-                if (achgen.Name != null)
-                    fullName += ": " + achgen.Name;
-
-                Console.WriteLine("Generating achievements for {0}", fullName);
-                Console.WriteLine("Please, wait...");
+                string fullName = achgen.AppId + (string.IsNullOrEmpty(achgen.Name) ? "" : $": {achgen.Name}");
+                Console.WriteLine($"Generating achievements for {fullName}...");
+                Console.WriteLine("Please wait...");
 
                 var achievements = new List<Achievement>();
-                var infoTable = soup.DocumentNode.SelectSingleNode("//table[contains(@class,'table-languages')]");
 
-                List<string> languages = new List<string>();
-
-                foreach (var row in infoTable.SelectNodes(".//tr"))
+                // ✅ Find all achievements divs
+                var achievementDivs = soup.DocumentNode.SelectNodes("//div[contains(@class,'achievement') and @id]");
+                if (achievementDivs == null || achievementDivs.Count == 0)
                 {
-                    var tds = row.SelectNodes(".//td");
-                    if (tds == null)
-                        continue;
-
-                    string lang = tds[0].InnerText.Trim().ToString().ToLowerInvariant();
-                    if (lang_names.ContainsKey(lang))
-                        lang = lang_names[lang];
-                    else
-                    {
-                        lang = lang.Split(new string[] { " " }, StringSplitOptions.RemoveEmptyEntries)[0];
-                        if (lang_names.ContainsKey(lang))
-                            lang = lang_names[lang];
-                    }
-
-                    languages.Add(lang);
+                    Console.WriteLine("No achievements found — check if you saved the /stats/ page fully.");
+                    return achievements.ToArray();
                 }
 
-                if (languages.Count == 0)
-                    languages.Add("english");
+                var imgdir = Path.Combine(folder, "images");
+                MakeDir(imgdir);
 
-                var achievementsTable = soup.DocumentNode.SelectSingleNode("//div[@id='js-achievements']");
-                if (achievementsTable == null)
-                    return achievements.ToArray();
-
-                achievementsTable = achievementsTable.SelectSingleNode(".//tbody");
-
-                var translation = new Dictionary<string, Achievement>();
-                var eng = GetEnglishTranslation();
-
-                foreach (string lang in languages)
+                foreach (var achNode in achievementDivs)
                 {
-                    Achievement ach = GetTranslation(lang, ref eng);
-                    if (ach.displayName.Count == 0)
-                        continue;
-                    if (!translation.ContainsKey(lang))
-                        translation.Add(lang, ach);
-                }
-
-                var imgdir = $"{folder}/achievement_images";
-
-                if (!MakeDir(folder))
-                    return achievements.ToArray();
-
-                foreach (var row in achievementsTable.SelectNodes(".//tr"))
-                {
-                    var tds = row.SelectNodes(".//td");
-                    if (tds.Count < 3)
-                        continue;
-
-                    Achievement data = new Achievement()
+                    try
                     {
-                        name = tds[0].InnerText.Trim()
-                    };
+                        var data = new Achievement();
 
-                    var split = tds[1].InnerText.Split(new[] { "\r\n", "\n" }, StringSplitOptions.None);
-                    if (split.Length >= 4)
-                    {
-                        var text = split[1];
-                        var displayName = text;
-                        var text2 = split[3].Trim();
-                        var description = text2;
+                        // API name
+                        var apiNode = achNode.SelectSingleNode(".//div[contains(@class,'achievement_api')]");
+                        data.name = apiNode?.InnerText.Trim() ?? "";
 
-                        data.hidden = tds[1].SelectSingleNode(".//svg[@aria-hidden='true']") != null ? "1" : "0";
+                        // Display name
+                        var nameNode = achNode.SelectSingleNode(".//div[contains(@class,'achievement_name')]");
+                        var descNode = achNode.SelectSingleNode(".//div[contains(@class,'achievement_desc')]");
+                        var spoilerNode = descNode?.SelectSingleNode(".//span[contains(@class,'achievement_spoiler')]");
 
-                        if (description.ToLowerInvariant() == "hidden." && data.hidden == "1")
-                            description = "";
+                        string displayName = nameNode?.InnerText.Trim() ?? "";
+                        string description = spoilerNode != null ? spoilerNode.InnerText.Trim() :
+                                             descNode?.InnerText.Trim() ?? "";
 
-                        if (translation.Count == 0)
+                        // Hidden achievements
+                        data.hidden = descNode != null && descNode.InnerHtml.Contains("Hidden achievement") ? "1" : "0";
+
+                        data.displayName["english"] = displayName;
+                        data.description["english"] = description;
+
+                        // Icons
+                        var mainIcon = achNode.SelectSingleNode(".//img[contains(@class,'achievement_image')]");
+                        var grayIcon = achNode.SelectSingleNode(".//img[contains(@class,'achievement_image_small')]");
+                        string iconName = mainIcon?.GetAttributeValue("data-name", "") ?? "";
+                        string grayName = grayIcon?.GetAttributeValue("data-name", "") ?? "";
+
+                        if (!string.IsNullOrEmpty(iconName))
                         {
-                            if (displayName != "")
-                                if (!data.displayName.ContainsKey("english"))
-                                    data.displayName.Add("english", HttpUtility.HtmlDecode(displayName));
-                            if (description != "")
-                                if (!data.description.ContainsKey("english"))
-                                    data.description.Add("english", HttpUtility.HtmlDecode(description));
+                            data.icon = $"images/{iconName}";
+                            CopyFile($"{filesdir}/{iconName}", $"{imgdir}/{iconName}");
                         }
-                        else
+                        if (!string.IsNullOrEmpty(grayName))
                         {
-                            foreach (string lang in languages)
-                            {
-                                if (!translation.ContainsKey(lang))
-                                    continue;
-
-                                if (translation[lang].displayName.ContainsKey(text))
-                                {
-                                    if (translation[lang].displayName[text] != "")
-                                        displayName = translation[lang].displayName[text];
-
-                                    if (translation[lang].description[text] != "")
-                                        description = translation[lang].description[text];
-                                }
-
-                                if (displayName != "")
-                                    if (!data.displayName.ContainsKey(lang))
-                                        data.displayName.Add(lang, HttpUtility.HtmlDecode(displayName));
-                                if (description != "")
-                                    if (!data.description.ContainsKey(lang))
-                                        data.description.Add(lang, HttpUtility.HtmlDecode(description));
-                            }
+                            data.icon_gray = $"images/{grayName}";
+                            CopyFile($"{filesdir}/{grayName}", $"{imgdir}/{grayName}");
                         }
 
-                        string token = data.name;
-                        if (data.name.StartsWith("id_"))
-                            token = "NEW_ACHIEVEMENT_1_" + data.name.Substring(3);
-
-                        data.displayName.Add("token", token + "_NAME");
-                        data.description.Add("token", token + "_DESC");
+                        achievements.Add(data);
                     }
-
-                    var img = tds[2].SelectNodes(".//img");
-                    var icon = img[0].GetAttributeValue("data-name", "");
-                    var icongray = img[1].GetAttributeValue("data-name", "");
-
-                    data.icon = icon;
-                    data.icon_gray = icongray;
-
-                    string src = "";
-                    string dst = "";
-                    if (MakeDir(imgdir))
+                    catch (Exception ex)
                     {
-                        src = $"{filesdir}/{icon}";
-                        dst = $"{imgdir}/{icon}";
-                        CopyFile(src, dst);
-
-                        src = $"{filesdir}/{icongray}";
-                        dst = $"{imgdir}/{icongray}";
-                        CopyFile(src, dst);
+                        Console.WriteLine($"Error parsing one achievement: {ex.Message}");
                     }
-
-                    achievements.Add(data);
                 }
 
+                Console.WriteLine($"Parsed {achievements.Count} achievements successfully!");
                 return achievements.ToArray();
             }
+
 
             public List<Dictionary<string, string>> GetStats()
             {
                 var stats = new List<Dictionary<string, string>>();
-                var statsTable = soup.DocumentNode.SelectSingleNode("//div[@id='js-stats']");
-                if (statsTable == null)
-                    return stats;
+                var statsContainer = soup.DocumentNode.SelectSingleNode("//div[contains(@id,'js-stats')]");
+                if (statsContainer == null) return stats;
 
-                statsTable = statsTable.SelectSingleNode(".//tbody");
+                var rows = statsContainer.SelectNodes(".//tr");
+                if (rows == null || rows.Count == 0) return stats;
 
-                foreach (var row in statsTable.SelectNodes(".//tr"))
+                foreach (var row in rows)
                 {
                     var tds = row.SelectNodes(".//td");
-                    if (tds.Count < 3)
-                        continue;
+                    if (tds == null || tds.Count < 3) continue;
 
-                    var data = new Dictionary<string, string>
+                    stats.Add(new Dictionary<string, string>
                     {
                         ["name"] = tds[0].InnerText.Trim(),
                         ["displayName"] = tds[1].InnerText.Trim(),
-                        ["defaultValue"] = tds[2].InnerText.Trim(),
-                    };
-
-                    stats.Add(data);
+                        ["defaultValue"] = tds[2].InnerText.Trim()
+                    });
                 }
 
                 return stats;
@@ -456,113 +306,16 @@ Programmed by Colmines92
             {
                 var dlc = new List<string>();
                 var dlcTable = soup.DocumentNode.SelectSingleNode("//div[@id='dlc']");
-                if (dlcTable == null)
-                    return dlc;
+                if (dlcTable == null) return dlc;
 
-                dlcTable = dlcTable.SelectSingleNode(".//tbody");
-
-                foreach (var row in dlcTable.SelectNodes(".//tr"))
+                foreach (var row in dlcTable.SelectNodes(".//tr") ?? Enumerable.Empty<HtmlNode>())
                 {
-                    if (row.GetAttributeValue("hidden", null) != null)
-                        continue;
-
                     var tds = row.SelectNodes(".//td");
-                    if (tds.Count < 2)
-                        continue;
-
-                    var line = $"{tds[0].InnerText.Trim()}={tds[1].InnerText.Trim()}";
-                    if (!dlc.Contains(line))
-                        dlc.Add(line);
+                    if (tds == null || tds.Count < 2) continue;
+                    dlc.Add($"{tds[0].InnerText.Trim()}={tds[1].InnerText.Trim()}");
                 }
 
                 return dlc;
-            }
-
-            public HtmlDocument GetEnglishTranslation()
-            {
-                HtmlDocument result = new HtmlDocument();
-
-                try
-                {
-                    string req = String.Format("stats/{0}/achievements/", achgen.AppId);
-                    var client = new RestClient("https://steamcommunity.com");
-                    var request = new RestRequest(req);
-                    client.CookieContainer = new CookieContainer();
-                    Cookie cook = new Cookie();
-
-                    try
-                    {
-                        cook = new Cookie("Steam_Language", "english");
-                    }
-                    catch { return result; }
-
-                    cook.Domain = "steamcommunity.com";
-                    var resp = client.Get(request);
-                    var orig = resp.Content;
-
-                    var origSoup = new HtmlDocument();
-                    origSoup.LoadHtml(orig);
-
-                    result = origSoup;
-                }
-                catch { }
-
-                return result;
-            }
-
-            public Achievement GetTranslation(string lang, ref HtmlDocument origSoup)
-            {
-                var translation = new Achievement();
-                try
-                {
-                    string req = String.Format("stats/{0}/achievements/", achgen.AppId);
-                    var client = new RestClient("https://steamcommunity.com");
-                    var request = new RestRequest(req);
-                    client.CookieContainer = new CookieContainer();
-                    Cookie cook = new Cookie();
-
-                    try
-                    {
-                        cook = new Cookie("Steam_Language", lang);
-                    }
-                    catch { return translation; }
-
-                    cook.Domain = "steamcommunity.com";
-                    client.CookieContainer.Add(cook);
-                    var resp = client.Get(request);
-                    var trns = resp.Content;
-
-                    var trnsSoup = new HtmlDocument();
-                    trnsSoup.LoadHtml(trns);
-
-                    var origRows = origSoup.DocumentNode.SelectNodes("//div[@class='achieveRow ']");
-                    var trnsRows = trnsSoup.DocumentNode.SelectNodes("//div[@class='achieveRow ']");
-
-                    var cnt = 0;
-
-                    if (origRows == null)
-                        return translation;
-
-                    var length = origRows.Count;
-
-                    while (cnt < length)
-                    {
-                        var achieveTxt = origRows[cnt].SelectSingleNode(".//div[@class='achieveTxt']");
-                        var origDisplayName = achieveTxt.SelectSingleNode(".//h3").InnerText.Trim();
-                        achieveTxt = trnsRows[cnt].SelectSingleNode(".//div[@class='achieveTxt']");
-                        var trnsDisplayName = achieveTxt.SelectSingleNode(".//h3").InnerText.Trim();
-                        var trnsDescription = achieveTxt.SelectSingleNode(".//h5").InnerText.Trim();
-                        if (!translation.displayName.ContainsKey(origDisplayName))
-                        {
-                            translation.displayName.Add(origDisplayName, trnsDisplayName);
-                            translation.description.Add(origDisplayName, trnsDescription);
-                        }
-                        cnt++;
-                    }
-                }
-                catch { }
-
-                return translation;
             }
 
             public string ValidateFileName(string fileName = "")
