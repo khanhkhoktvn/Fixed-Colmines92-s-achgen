@@ -1,6 +1,18 @@
-# Fixed Colmines92's achgen
-The OG: https://github.com/Colmines92/achgen
-Seems like steamdb just changed the html a bit so I was can not take the achivements list. So I make a bit change to brings it back to life.
+## Updated for SteamDB 2025 Layout
+
+This fork updates the original **achgen** by [Colmines92](https://github.com/Colmines92)
+to support the new SteamDB achievement page structure (now under `/stats/`).
+
+### Changes:
+- Fixed achievement parsing (`div.achievement` layout)
+- Works with all current SteamDB pages (as of October 2025)
+
+All credit goes to **Colmines92** for the original work —  
+this is just a compatibility patch maintained by the community.
+
+### Usage:
+Drag and drop any saved SteamDB `https://steamdb.info/app/WhateverTheGameIdIs/stats/` HTML file into the exe.
+Simply right click at the stats tab then "Save As... (Ctrl + S)" for anyone wonder
 
 
 USAGE:
