@@ -17,6 +17,7 @@ this is just a compatibility patch maintained by the community.
 4. U mean to see a downloaded html file and a data file like "Little Nightmares III Achievements · SteamDB_files" for example
 Now you good to go, drag the html into exe and tada!
 
+this prj have ChatGPT help
 
 
 USAGE:
