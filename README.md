@@ -11,8 +11,10 @@ All credit goes to **Colmines92** for the original work —
 this is just a compatibility patch maintained by the community.
 
 ### Usage:
-Load up the steamdb game u want, for example 'https://steamdb.info/app/1392860/'. Then click to "Achievement" tab(remember to quickly go thru all achievements list to get all images loaded).
-After finished, right click then "Save as" (Or just Ctrl+S) to save it locally. It will have downloaded html file and a data file like "Little Nightmares III Achievements · SteamDB_files"
+1. Load up the steamdb game u want, for example 'https://steamdb.info/app/1392860/'.
+2. Then click to "Achievement" tab(remember to quickly go thru all achievements list to get all images loaded).
+3. After finished, right click then "Save as" (Or just Ctrl+S) to save it locally.
+4. U mean to see a downloaded html file and a data file like "Little Nightmares III Achievements · SteamDB_files" for example
 Now you good to go, drag the html into exe and tada!
 
 
