@@ -11,8 +11,10 @@ All credit goes to **Colmines92** for the original work —
 this is just a compatibility patch maintained by the community.
 
 ### Usage:
-Drag and drop any saved SteamDB `https://steamdb.info/app/WhateverTheGameIdIs/stats/` HTML file into the exe.
-Simply right click at the stats tab then "Save As... (Ctrl + S)" for anyone wonder
+Load up the steamdb game u want, for example 'https://steamdb.info/app/1392860/'. Then click to "Achievement" tab(remember to quickly go thru all achievements list to get all images loaded).
+After finished, right click then "Save as" (Or just Ctrl+S) to save it locally. It will have downloaded html file and a data file like "Little Nightmares III Achievements · SteamDB_files"
+Now you good to go, drag the html into exe and tada!
+
 
 
 USAGE:
