@@ -211,7 +211,7 @@ Programmed by Colmines92 / Updated by khanhkhoktvn
 
                 var achievements = new List<Achievement>();
 
-                // ✅ Find all achievements divs
+                
                 var achievementDivs = soup.DocumentNode.SelectNodes("//div[contains(@class,'achievement') and @id]");
                 if (achievementDivs == null || achievementDivs.Count == 0)
                 {
@@ -327,3 +327,4 @@ Programmed by Colmines92 / Updated by khanhkhoktvn
         }
     }
 }
+
